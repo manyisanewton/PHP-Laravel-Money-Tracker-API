@@ -1,11 +1,19 @@
-# Money Tracker API (Laravel)
+# Money Tracker API
 
-Backend-only API for managing users, wallets, and transactions.
+Backend-only Money Tracker API built with Laravel. It supports users, wallets, and transactions with correct balance calculations and clear JSON responses.
 
-## Requirements
-- PHP 8.2+ (tested with 8.3)
-- Composer
-- A database (SQLite/MySQL/Postgres)
+## Features
+- Create users (no authentication required)
+- Create multiple wallets per user
+- Add income/expense transactions
+- View user profile with per-wallet balances and total balance
+- View a wallet with balance and paginated transactions
+- Validation, soft deletes, and consistent error responses
+
+## Tech
+- Laravel 12
+- PHP 8.3
+- SQLite/MySQL/Postgres supported
 
 ## Setup
 ```bash
@@ -14,9 +22,14 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Configure your database in `.env`, then run:
+Configure database in `.env`, then run:
 ```bash
 php artisan migrate
+```
+
+## Run Tests
+```bash
+php artisan test
 ```
 
 ## API Endpoints
@@ -49,7 +62,7 @@ Base URL: `/api`
 - Responses include both `amount` and `amount_cents`.
 
 ## Error Format
-- Validation errors return:
+Validation errors return:
 ```json
 {
   "message": "Validation failed.",
@@ -58,7 +71,12 @@ Base URL: `/api`
   }
 }
 ```
-- Missing resources return:
+
+Missing resources return:
 ```json
 { "message": "Resource not found." }
 ```
+
+## Notes
+- No authentication by requirement.
+- Soft deletes enabled for wallets and transactions.
