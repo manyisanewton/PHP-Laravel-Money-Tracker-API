@@ -30,9 +30,10 @@ Base URL: `/api`
 
 ### Wallets
 - `POST /api/users/{user}/wallets`
-  - Body: `name` (string, required), `description` (string, optional)
+  - Body: `name` (string, required), `description` (string, optional), `currency` (3-letter code, optional, default `USD`)
 - `GET /api/wallets/{wallet}`
-  - Returns wallet details, wallet balance, and all transactions
+  - Returns wallet details, wallet balance, and paginated transactions
+  - Query: `per_page` (1-100, default 15)
 
 ### Transactions
 - `POST /api/wallets/{wallet}/transactions`
@@ -42,5 +43,22 @@ Base URL: `/api`
 - Income adds to balance
 - Expense subtracts from balance
 
-## Notes
-- No authentication is required per assessment instructions.
+## Amount Storage
+- API accepts decimal amounts (e.g., `12.34`).
+- Values are stored in `amount_cents` to avoid floating-point errors.
+- Responses include both `amount` and `amount_cents`.
+
+## Error Format
+- Validation errors return:
+```json
+{
+  "message": "Validation failed.",
+  "errors": {
+    "field": ["Error message"]
+  }
+}
+```
+- Missing resources return:
+```json
+{ "message": "Resource not found." }
+```
