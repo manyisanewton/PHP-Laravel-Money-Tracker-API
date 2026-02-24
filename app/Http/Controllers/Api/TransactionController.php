@@ -3,22 +3,24 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreTransactionRequest;
+use App\Http\Resources\TransactionResource;
 use App\Models\Wallet;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
-    public function store(Request $request, Wallet $wallet): JsonResponse
+    public function store(StoreTransactionRequest $request, Wallet $wallet): JsonResponse
     {
-        $validated = $request->validate([
-            'type' => ['required', 'in:income,expense'],
-            'amount' => ['required', 'numeric', 'gt:0'],
-            'description' => ['nullable', 'string', 'max:255'],
-        ]);
+        $validated = $request->validated();
+        $amount = (float) $validated['amount'];
+        $amountCents = (int) round($amount * 100);
+
+        $validated['amount'] = $amount;
+        $validated['amount_cents'] = $amountCents;
 
         $transaction = $wallet->transactions()->create($validated);
 
-        return response()->json($transaction, 201);
+        return (new TransactionResource($transaction))->response()->setStatusCode(201);
     }
 }

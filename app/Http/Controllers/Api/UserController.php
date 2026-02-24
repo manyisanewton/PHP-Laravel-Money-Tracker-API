@@ -3,22 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function store(StoreUserRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-        ]);
+        $user = User::create($request->validated());
 
-        $user = User::create($validated);
-
-        return response()->json($user, 201);
+        return (new UserResource($user))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function show(User $user): JsonResponse
@@ -26,34 +24,23 @@ class UserController extends Controller
         $wallets = $user->wallets()
             ->withSum(['transactions as income_total' => function ($query) {
                 $query->where('type', 'income');
-            }], 'amount')
+            }], 'amount_cents')
             ->withSum(['transactions as expense_total' => function ($query) {
                 $query->where('type', 'expense');
-            }], 'amount')
+            }], 'amount_cents')
             ->get();
 
-        $walletsPayload = $wallets->map(function ($wallet) {
-            $income = (float) ($wallet->income_total ?? 0);
-            $expense = (float) ($wallet->expense_total ?? 0);
-            $balance = $income - $expense;
-
-            return [
-                'id' => $wallet->id,
-                'name' => $wallet->name,
-                'description' => $wallet->description,
-                'balance' => $balance,
-                'created_at' => $wallet->created_at,
-            ];
+        $wallets->each(function ($wallet): void {
+            $income = (int) ($wallet->income_total ?? 0);
+            $expense = (int) ($wallet->expense_total ?? 0);
+            $wallet->balance_cents = $income - $expense;
         });
 
-        $totalBalance = $walletsPayload->sum('balance');
+        $totalBalanceCents = $wallets->sum('balance_cents');
 
-        return response()->json([
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'wallets' => $walletsPayload,
-            'total_balance' => $totalBalance,
-        ]);
+        $user->setRelation('wallets', $wallets);
+        $user->total_balance_cents = $totalBalanceCents;
+
+        return (new UserResource($user))->response();
     }
 }
